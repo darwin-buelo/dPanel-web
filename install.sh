@@ -17,12 +17,41 @@ REPO_URL="https://github.com/username/repository.git"
 PROJECT_DIR="/www/dpanel"
 NGINX_PORT="3245"
 PHP_VERSION="8.4"
-NODE_VERSION="20"
+NODE_VERSION="24"
+NGINX_CONFIG_PATH="/etc/nginx/sites-available/dpanel"
 
 # --- Helper Functions ---
 function command_exists() {
     command -v "$@" >/dev/null 2>&1
 }
+
+function silent() {
+    "$@" > /dev/null 2>&1
+}
+
+function rollback() {
+    echo ""
+    echo "!!! An error occurred. Rolling back changes..."
+
+    if [ -d "$PROJECT_DIR" ]; then
+        echo "Removing project directory..."
+        rm -rf "$PROJECT_DIR"
+    fi
+
+    if [ -f "$NGINX_CONFIG_PATH" ]; then
+        echo "Removing Nginx configuration..."
+        rm -f "$NGINX_CONFIG_PATH"
+    fi
+
+    if [ -L "/etc/nginx/sites-enabled/dpanel" ]; then
+        rm -f "/etc/nginx/sites-enabled/dpanel"
+    fi
+
+    echo "Rollback complete."
+    exit 1
+}
+
+trap 'rollback' ERR
 
 echo "--- dPanel Installation Script ---"
 
@@ -36,32 +65,32 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Update package lists and install prerequisite tools
-apt-get update
-apt-get install -y ca-certificates apt-transport-https software-properties-common curl
+silent apt-get update
+silent apt-get install -y ca-certificates apt-transport-https software-properties-common curl
 
 # Install Nginx, Git, and Unzip
-apt-get install -y nginx git unzip
+silent apt-get install -y nginx git unzip
 
 # Install Node.js and npm (using NodeSource for a recent version)
 if ! command_exists node; then
     echo "Installing Node.js v${NODE_VERSION} and npm..."
-    curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" | bash -
-    apt-get install -y nodejs
+    silent bash -c "curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -"
+    silent apt-get install -y nodejs
 else
     echo "Node.js is already installed."
 fi
 
 # Install PHP and required extensions using the ondrej/php PPA
 echo "Installing PHP ${PHP_VERSION} and required extensions..."
-add-apt-repository ppa:ondrej/php -y
-apt-get update
-apt-get install -y php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-mbstring php${PHP_VERSION}-xml php${PHP_VERSION}-mysql php${PHP_VERSION}-curl php${PHP_VERSION}-zip php${PHP_VERSION}-gd php${PHP_VERSION}-bcmath
+silent add-apt-repository ppa:ondrej/php -y
+silent apt-get update
+silent apt-get install -y php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-mbstring php${PHP_VERSION}-xml php${PHP_VERSION}-mysql php${PHP_VERSION}-curl php${PHP_VERSION}-zip php${PHP_VERSION}-gd php${PHP_VERSION}-bcmath
 
 # Install Composer
 if ! command_exists composer; then
     echo "Installing Composer..."
-    curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
-    php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    silent curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
+    silent php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
     rm /tmp/composer-setup.php
 else
     echo "Composer is already installed."
@@ -78,33 +107,31 @@ echo "Created directory ${PROJECT_DIR}."
 echo ">>> Step 3: Cloning repository and installing application..."
 
 echo "Cloning from ${REPO_URL}..."
-git clone "$REPO_URL" "$PROJECT_DIR"
+silent git clone "$REPO_URL" "$PROJECT_DIR"
 
 cd "$PROJECT_DIR"
 
 echo "Installing Composer dependencies..."
-composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+silent composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
 echo "Setting up .env file..."
 cp .env.example .env
 
 echo "Generating application key..."
-php artisan key:generate
+silent php artisan key:generate
 
 echo "Setting up storage and cache permissions..."
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
 echo "Installing NPM dependencies and building assets..."
-npm install
-npm run build
+silent npm install
+silent npm run build
 
 echo ">>> Application setup complete."
 
 # --- 4. Configure Nginx ---
 echo ">>> Step 4: Configuring Nginx..."
-
-NGINX_CONFIG_PATH="/etc/nginx/sites-available/dpanel"
 
 echo "Creating Nginx server block configuration..."
 cat > "$NGINX_CONFIG_PATH" <<EOF
@@ -143,8 +170,8 @@ EOF
 ln -sf "$NGINX_CONFIG_PATH" /etc/nginx/sites-enabled/
 
 echo "Testing Nginx configuration and restarting service..."
-nginx -t
-systemctl restart nginx
+silent nginx -t
+silent systemctl restart nginx
 
 echo "--- Installation Complete! ---"
 echo "dPanel should now be accessible at http://<your-server-ip>:${NGINX_PORT}"
