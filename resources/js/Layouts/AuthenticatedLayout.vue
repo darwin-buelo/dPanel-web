@@ -11,25 +11,41 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const items = [
     { title: 'Dashboard', icon: 'mdi-view-dashboard', url: '/dashboard' },
     { title: 'Websites', icon: 'mdi-web', url: '/websites' },
-    { title: 'Users', icon: 'mdi-account-group', url: '/users' },
+    { title: 'Terminal', icon: 'mdi-console', url: '/terminal' },
     { title: 'Settings', icon: 'mdi-cog', url: '/settings' },
 ];
 
-const theme = useTheme();
-theme.themes.value.blue = {
-    dark: true,
-    colors: {
-        background: '#1565C0',
-        surface: '#1E88E5',
-        primary: '#FFFFFF',
-        secondary: '#BBDEFB',
+const breadcrumbs = computed(() => {
+    const url = page.url.split('?')[0];
+    if (url === '/dashboard') {
+        return [{ title: 'Dashboard', disabled: true, href: '/dashboard' }];
     }
-};
 
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme) {
-    theme.global.name.value = savedTheme;
-}
+    const crumbs = [
+        { title: 'Dashboard', disabled: false, href: '/dashboard' }
+    ];
+
+    const segments = url.split('/').filter(p => p);
+    let currentPath = '';
+
+    segments.forEach((segment, index) => {
+        currentPath += `/${segment}`;
+        if (segment === 'dashboard') return;
+
+        const isLast = index === segments.length - 1;
+        const menuItem = items.find(i => i.url === currentPath);
+
+        crumbs.push({
+            title: menuItem ? menuItem.title : segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            disabled: isLast,
+            href: currentPath
+        });
+    });
+
+    return crumbs;
+});
+
+const theme = useTheme();
 
 watch(() => theme.global.name.value, (val) => {
     localStorage.setItem('theme', val);
@@ -42,9 +58,8 @@ watch(() => theme.global.name.value, (val) => {
 }, { immediate: true });
 
 const themes = [
-    { title: 'Light', value: 'light', icon: 'mdi-weather-sunny' },
-    { title: 'Dark', value: 'dark', icon: 'mdi-weather-night' },
-    { title: 'Blue', value: 'blue', icon: 'mdi-palette' },
+    { title: 'Light', value: 'lightBlue', icon: 'mdi-weather-sunny' },
+    { title: 'Dark', value: 'darkBlue', icon: 'mdi-weather-night' }
 ];
 function setTheme(key) {
     theme.global.name.value = key;
@@ -103,6 +118,17 @@ const themeIcon = computed(() => themes.find(t => t.value === theme.global.name.
 
         <v-main>
             <v-container fluid>
+                <v-breadcrumbs :items="breadcrumbs" class="mb-4">
+                    <template v-slot:item="{ item }">
+                        <v-breadcrumbs-item
+                            :disabled="item.disabled"
+                            :href="item.href"
+                            @click.prevent="!item.disabled && router.get(item.href)"
+                        >
+                            {{ item.title }}
+                        </v-breadcrumbs-item>
+                    </template>
+                </v-breadcrumbs>
                 <slot />
             </v-container>
         </v-main>

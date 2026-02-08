@@ -1,15 +1,21 @@
 <script setup>
+import AddModal from '@/components/Websites/AddModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+const showAddModal = ref(false);
+
+
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Websites" />
     <AuthenticatedLayout>
+        <AddModal v-model="showAddModal"/>
         <v-row>
             <v-col cols="12" class="d-flex justify-space-between align-center">
-                <h2 class="text-h5 font-weight-bold">Websites</h2>
-                <v-btn color="primary" prepend-icon="mdi-plus">
+                <v-btn color="primary" prepend-icon="mdi-plus" @click="showAddModal = true">
                     Add Website
                 </v-btn>
             </v-col>
@@ -20,13 +26,14 @@ import { Head } from '@inertiajs/vue3';
                         :headers="[
                             { title: 'Name', key: 'name' },
                             { title: 'URL', key: 'url' },
+                            { title: 'Path', key: 'path' },
                             { title: 'Status', key: 'status' },
                             { title: 'Actions', key: 'actions', sortable: false },
                         ]"
                         :items="[
-                            { id: 1, name: 'My Personal Blog', url: 'https://blog.example.com', status: 'Active' },
-                            { id: 2, name: 'E-commerce Store', url: 'https://shop.example.com', status: 'Active' },
-                            { id: 3, name: 'Portfolio', url: 'https://portfolio.me', status: 'Maintenance' },
+                            { id: 1, name: 'My Personal Blog', url: 'https://blog.example.com', path: '/www/wwwroot/blog.example.com', status: 'Active' },
+                            { id: 2, name: 'E-commerce Store', url: 'https://shop.example.com', path: '/www/wwwroot/shop.example.com', status: 'Active' },
+                            { id: 3, name: 'Portfolio', url: 'https://portfolio.me',path: '/www/wwwroot/blog.example.com', status: 'Maintenance' },
                         ]"
                         class="elevation-1"
                     >

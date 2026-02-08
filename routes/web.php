@@ -22,6 +22,14 @@ Route::get('/websites', function () {
     return Inertia::render('Websites');
 })->middleware(['auth', 'verified'])->name('websites');
 
+Route::get('/terminal', function () {
+    return Inertia::render('Terminal');
+})->middleware(['auth', 'verified'])->name('terminal');
+
+Route::get('/settings', function () {
+    return Inertia::render('Settings');
+})->middleware(['auth', 'verified'])->name('settings');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -12,17 +12,32 @@ import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 
+const defaultTheme = localStorage.getItem('theme') || 'lightBlue';
+if (defaultTheme === 'darkBlue') {
+    document.documentElement.classList.add('dark');
+}
+
 const vuetify = createVuetify({
     components,
     directives,
     theme: {
-        defaultTheme: 'darkBlue',
+        defaultTheme,
+        variations: false,
         themes: {
             darkBlue: {
                 dark: true,
                 colors: {
                     background: '#0F172A',
                     surface: '#1E293B',
+                    primary: '#38BDF8',
+                    secondary: '#94A3B8',
+                },
+            },
+            lightBlue: {
+                dark: false,
+                colors: {
+                    background: '#eeeeee',
+                    surface: '#FFFFFF',
                     primary: '#38BDF8',
                     secondary: '#94A3B8',
                 },
