@@ -112,7 +112,7 @@ silent git clone "$REPO_URL" "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
 echo "Installing Composer dependencies..."
-silent composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+silent composer update --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
 echo "Setting up .env file..."
 cp .env.example .env
